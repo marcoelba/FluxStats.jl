@@ -1,0 +1,13 @@
+name = "FluxStats"
+uuid = "c8830fc2-eb4a-4cad-8492-30a80db756e0"
+authors = ["Marco Molinari"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
