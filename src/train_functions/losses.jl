@@ -1,5 +1,3 @@
-module Losses
-
 using Zygote
 using Flux
 using Distributions
@@ -55,5 +53,3 @@ function log_half_gaussian_penalty(x, sigma2)
     x_std = (x .* x) / sigma2
     return 0.5f0 * x_std + log(sigma) + 0.5f0 * log(Float32(pi)) - 0.5f0 * log(2f0)
 end
-
-end # module

@@ -5,9 +5,11 @@ using Flux
 using Distributions
 
 script_path = normpath(joinpath(@__FILE__, "..", ".."))
-include(joinpath(script_path, "train_functions", "penalty_functions.jl"))
-import .penalty
-include(joinpath(script_path, "train_functions", "losses.jl"))
+# include(joinpath(script_path, "train_functions", "losses.jl"))
+
+# Internal
+using FluxStats
+using FluxStats: Penalties
 
 
 """
@@ -53,8 +55,8 @@ function Base.show(io::IO, l::MyScale)
 end
 
 # Add penalty for MyScale
-function penalty(l::MyScale)
-    l.lambda * Losses.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
+function Penalties.penalty(l::MyScale)
+    l.lambda * FluxStats.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
 end
 
 
@@ -121,7 +123,7 @@ function Base.show(io::IO, l::ScaleMixtureDense)
 end
 
 # Add penalty for ScaleMixtureDense layer - Horseshoe hierachical structure here
-function penalty(l::ScaleMixtureDense)
+function Penalties.penalty(l::ScaleMixtureDense)
     # transform the scale parameters first
     scale = Flux.softplus.(l.scale)
     prior_weight = Distributions.Normal.(0f0, scale)
@@ -158,7 +160,7 @@ function Base.show(io::IO, l::DensePrior)
     print(io, ")")
 end
 
-function penalty(l::DensePrior)
+function Penalties.penalty(l::DensePrior)
     -sum(Distributions.logpdf.(l.prior, Flux.params(l.dense_layer)))
 end
 

@@ -3,11 +3,8 @@
 using Flux
 using Distributions
 
-script_path = normpath(joinpath(@__FILE__, "..", ".."))
-include(joinpath(script_path, "train_functions", "losses.jl"))
-include(joinpath(script_path, "train_functions", "penalty_functions.jl"))
-include(joinpath(script_path, "flux_models", "custom_flux_layers.jl"))
-include(joinpath(script_path, "flux_models", "custom_flux_models.jl"))
+# Internal
+using FluxStats: Penalties, CustomFluxLayers, FunctionalFluxModel
 
 
 """
@@ -56,7 +53,7 @@ function model_train(
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             model_predictions = m(X_train)
-            loss_function(y_train, y_hat) + penalty(m)
+            loss_function(y_train, y_hat) + Penalties.penalty(m)
         end
         Flux.update!(optim, model, grads[1])
         push!(train_loss, loss)  # logging, outside gradient context

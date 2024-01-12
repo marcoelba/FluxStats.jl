@@ -4,8 +4,8 @@ module FunctionalFluxModel
 using Flux
 using Distributions
 
-script_path = normpath(joinpath(@__FILE__, "..", ".."))
-include(joinpath(script_path, "train_functions", "penalty_functions.jl"))
+# Internal
+using FluxStats: Penalties
 
 
 struct FluxRegModel{LM<:Flux.Chain, LV<:Flux.Chain}
@@ -32,11 +32,8 @@ function Base.show(io::IO, l::FluxRegModel)
 end
 
 # Add penalty functionality (multiple dispatch)
-function penalty(reg_model::FluxRegModel)
+function Penalties.penalty(reg_model::FluxRegModel)
     penalty(reg_model.layer_mean) + penalty(reg_model.layer_var)
 end
-
-
-export penalty
 
 end
