@@ -133,7 +133,8 @@ end
 
 
 """
-    Dense layer with prior distribution on weights
+    Dense layer with prior distribution on weights.
+    The activation function defined in the Dense layer is also used as a bijector transformation on the params in the penalty
 
     DensePrior(
         dense_layer::Flux.Dense
@@ -142,7 +143,7 @@ end
 
     Standard Dense layer with prior distribution on weights
 """
-struct DensePrior{D<:Flux.Dense, P<:Distributions.Distribution}
+struct DensePrior{D<:Flux.Dense, P<:Distributions.Distribution, F}
     dense_layer::D
     prior::P
 end
@@ -161,7 +162,8 @@ function Base.show(io::IO, l::DensePrior)
 end
 
 function Penalties.penalty(l::DensePrior)
-    -sum(Distributions.logpdf.(l.prior, Flux.params(l.dense_layer)))
+    dense_t = l.dense_layer.(σFlux.params(l.dense_layer))
+    -sum(Distributions.logpdf.(l.prior, dense_t))
 end
 
 
