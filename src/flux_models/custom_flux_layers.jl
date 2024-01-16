@@ -143,7 +143,7 @@ end
 
     Standard Dense layer with prior distribution on weights
 """
-struct DensePrior{D<:Flux.Dense, P<:Distributions.Distribution, F}
+struct DensePrior{D<:Flux.Dense, P<:Distributions.Distribution}
     dense_layer::D
     prior::P
 end
