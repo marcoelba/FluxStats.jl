@@ -53,7 +53,7 @@ function model_train(
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             model_predictions = m(X_train)
-            loss_function(y_train, y_hat) + Penalties.penalty(m)
+            Losses.negloglik(y_train, model_predictions, loss_function) + Penalties.penalty(m)
         end
         Flux.update!(optim, model, grads[1])
         push!(train_loss, loss)  # logging, outside gradient context
@@ -61,7 +61,7 @@ function model_train(
         # validation
         if !isnothing(y_val)
             model_predictions_val = model(X_val)
-            v_loss = loss_function(y_val, y_val_hat)
+            v_loss = Losses.negloglik(y_val, model_predictions_val, loss_function)
             push!(val_loss, v_loss)
         end
 

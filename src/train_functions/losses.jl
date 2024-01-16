@@ -1,23 +1,38 @@
+module Losses
+
 using Zygote
 using Flux
 using Distributions
 
 
 """
+    Generic function for the model loss
+    Takes as input the model predictions, which can consist of one or multiple elements,
+    and a negative log likelihood as defined below.
+"""
+function negloglik(x::Array{Float32}, model_predictions::Array{Float32}, negloglik_function)
+    negloglik_function(x, model_predictions)
+end
+
+function negloglik(x::Array{Float32}, model_predictions::Tuple, negloglik_function)
+    negloglik_function(x, model_predictions...)
+end
+
+"""
+    negloglik_normal(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=[1f0])
+
     Guassian negative log-likelihood
 """
-function neg_gaussian_loglik(y_true, y_pred; sigma2_y=1f0)
-    y_res = y_true .- y_pred
-    y_std = (y_res .* y_res) ./ sigma2_y
-
-    0.5 * mean(y_std .+ log.(2f0 * Float32(pi)) .+ log(sigma2_y))
+function negloglik_normal(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=[1f0])
+    distribution = Distributions.Normal{Float32}.(mu, sigma)
+    -sum(Distributions.logpdf.(distribution, x))
 end
 
 
 """
     Bernoulli negative log-likelihood
 """
-function bernoulli_loglik(ytrue, yhat)
+function bernoulli_negloglik(ytrue, yhat)
     ytrue .* log(yhat) + (1 .- ytrue) .* log(1 - yhat)
 end
 
@@ -52,4 +67,7 @@ end
 function log_half_gaussian_penalty(x, sigma2)
     x_std = (x .* x) / sigma2
     return 0.5f0 * x_std + log(sigma) + 0.5f0 * log(Float32(pi)) - 0.5f0 * log(2f0)
+end
+
+
 end

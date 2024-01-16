@@ -56,7 +56,7 @@ end
 
 # Add penalty for MyScale
 function Penalties.penalty(l::MyScale)
-    l.lambda * FluxStats.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
+    l.lambda * FluxStats.Losses.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
 end
 
 
