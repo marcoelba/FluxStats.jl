@@ -162,7 +162,7 @@ function Base.show(io::IO, l::DensePrior)
 end
 
 function Penalties.penalty(l::DensePrior)
-    dense_t = l.dense_layer.(σFlux.params(l.dense_layer))
+    dense_t = l.dense_layer.σ(Flux.params(l.dense_layer))
     -sum(Distributions.logpdf.(l.prior, dense_t))
 end
 

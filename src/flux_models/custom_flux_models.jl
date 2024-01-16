@@ -33,7 +33,7 @@ end
 
 # Add penalty functionality (multiple dispatch)
 function Penalties.penalty(reg_model::FluxRegModel)
-    penalty(reg_model.layer_mean) + penalty(reg_model.layer_var)
+    Penalties.penalty(reg_model.layer_mean) + Penalties.penalty(reg_model.layer_var)
 end
 
 end
