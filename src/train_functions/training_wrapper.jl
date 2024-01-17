@@ -4,29 +4,47 @@ using Flux
 using Distributions
 
 # Internal
-using FluxStats: Penalties, CustomFluxLayers, FunctionalFluxModel
+using FluxStats: Penalties, CustomFluxLayers, FunctionalFluxModel, Losses
 
 
 """
     Model training wrapper
 
     model_train(
-    X_train::Matrix{Float32}, y_train::Matrix{Float32};
-    model::Flux.Chain, loss_function, optim::Flux.Optimise.AbstractOptimiser, n_iter::Integer,
-    X_val::Matrix{Float32}=nothing, y_val::Matrix{Float32}=nothing
+        X_train::Union{Matrix{Float32}, Tuple{Matrix{Float32}, Matrix{Float32}}},
+        y_train::Matrix{Float32};
+        model::Union{Flux.Chain, FunctionalFluxModel.FluxRegModel},
+        loss_function,
+        optim::Flux.Optimise.AbstractOptimiser,
+        n_iter::Integer,
+        X_val::Union{Matrix{Float32}, Nothing}=nothing,
+        y_val::Union{Matrix{Float32}, Nothing}=nothing,
+        track_weights::Bool=false
     )
 """
 function model_train(
-    X_train::Matrix{Float32},
-    y_train::Matrix{Float32};
+    X_train::Union{Array{Float32}, Tuple{Array{Float32}, Array{Float32}}},
+    y_train::Array{Float32};
     model::Union{Flux.Chain, FunctionalFluxModel.FluxRegModel},
-    loss_function::Union{Distributions.Distribution},
+    loss_function,
     optim::Flux.Optimise.AbstractOptimiser,
     n_iter::Integer,
-    X_val::Union{Matrix{Float32}, Nothing}=nothing,
-    y_val::Union{Matrix{Float32}, Nothing}=nothing,
+    X_val::Union{Array{Float32}, Tuple{Array{Float32}, Array{Float32}}, Nothing}=nothing,
+    y_val::Union{Array{Float32}, Nothing}=nothing,
     track_weights::Bool=false
     )
+    # ---------- Input cheks -------------
+    # Check dimensions of model output and loss input
+    try
+        out_model = mean_model(X_train)
+        loss_function(y_train, out_model...)
+    catch err
+        throw("Model output and loss input sizes do not match")
+    end
+    # Check number of iterations
+    if n_iter <= 1
+        throw("Number of iterations must be > 1")
+    end
 
     optim = Flux.setup(optim, model)
 
@@ -49,7 +67,7 @@ function model_train(
     end
 
     for epoch in 1:n_iter
-        n_batch = length(y_train)
+        # n_batch = length(y_train)
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             model_predictions = m(X_train)

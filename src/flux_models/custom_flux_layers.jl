@@ -4,12 +4,9 @@ module CustomFluxLayers
 using Flux
 using Distributions
 
-script_path = normpath(joinpath(@__FILE__, "..", ".."))
-# include(joinpath(script_path, "train_functions", "losses.jl"))
-
 # Internal
 using FluxStats
-using FluxStats: Penalties
+using FluxStats: Penalties, WeightTracking
 
 
 """
@@ -131,6 +128,19 @@ function Penalties.penalty(l::ScaleMixtureDense)
     -sum(Distributions.logpdf.(l.prior_scale, scale)) - l.lambda * sum(Distributions.logpdf.(prior_weight, l.weight))
 end
 
+# Extend weight tracking function
+function WeightTracking.weight_container_init(layer::ScaleMixtureDense; n_iter::Int64)
+    w_dict = Dict()
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        w_dict[string(pos)] = zeros32(param_size..., n_iter)
+        dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
+    end
+
+    return w_dict, dim_dict
+end
+
 
 """
     Dense layer with prior distribution on weights.
@@ -164,6 +174,19 @@ end
 function Penalties.penalty(l::DensePrior)
     dense_t = l.dense_layer.σ.(l.dense_layer.weight)
     -sum(Distributions.logpdf.(l.prior, dense_t))
+end
+
+# Extend weight tracking function
+function WeightTracking.weight_container_init(layer::DensePrior; n_iter::Int64)
+    w_dict = Dict()
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        w_dict[string(pos)] = zeros32(param_size..., n_iter)
+        dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
+    end
+
+    return w_dict, dim_dict
 end
 
 

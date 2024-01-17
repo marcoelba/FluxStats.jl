@@ -5,6 +5,7 @@ using .Penalties
 export penalty
 
 include(joinpath("train_functions", "losses.jl"))
+include(joinpath("train_functions", "weights_tracking.jl"))
 
 include(joinpath("flux_models", "custom_flux_layers.jl"))
 include(joinpath("flux_models", "custom_flux_models.jl"))
