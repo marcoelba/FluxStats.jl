@@ -4,12 +4,9 @@ module CustomFluxLayers
 using Flux
 using Distributions
 
-script_path = normpath(joinpath(@__FILE__, "..", ".."))
-# include(joinpath(script_path, "train_functions", "losses.jl"))
-
 # Internal
 using FluxStats
-using FluxStats: Penalties
+using FluxStats: Penalties, WeightTracking
 
 
 """
@@ -56,7 +53,7 @@ end
 
 # Add penalty for MyScale
 function Penalties.penalty(l::MyScale)
-    l.lambda * FluxStats.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
+    l.lambda * FluxStats.Losses.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
 end
 
 
@@ -131,6 +128,32 @@ function Penalties.penalty(l::ScaleMixtureDense)
     -sum(Distributions.logpdf.(l.prior_scale, scale)) - l.lambda * sum(Distributions.logpdf.(prior_weight, l.weight))
 end
 
+# Extend weights tracking function
+function WeightTracking.weight_container_init(layer::ScaleMixtureDense; n_iter::Int64)
+    w_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        w_dict[string(pos)] = zeros32(param_size..., n_iter)
+    end
+
+    return w_dict
+end
+
+function WeightTracking.weight_tracking_push!(epoch::Int64, layer::ScaleMixtureDense, dict_weights_layer::Dict, dict_dims_layer::Dict)
+    for (pos, param) in enumerate(Flux.params(layer))
+        dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
+    end
+end
+
+function WeightTracking.container_dim_init(layer::ScaleMixtureDense)
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
+    end
+
+    return dim_dict
+end
 
 """
     Dense layer with prior distribution on weights.
@@ -164,6 +187,33 @@ end
 function Penalties.penalty(l::DensePrior)
     dense_t = l.dense_layer.σ.(l.dense_layer.weight)
     -sum(Distributions.logpdf.(l.prior, dense_t))
+end
+
+# Extend weight tracking function
+function WeightTracking.weight_container_init(layer::DensePrior; n_iter::Int64)
+    w_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        w_dict[string(pos)] = zeros32(param_size..., n_iter)
+    end
+
+    return w_dict
+end
+
+function WeightTracking.weight_tracking_push!(epoch::Int64, layer::DensePrior, dict_weights_layer::Dict, dict_dims_layer::Dict)
+    for (pos, param) in enumerate(Flux.params(layer))
+        dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
+    end
+end
+
+function WeightTracking.container_dim_init(layer::DensePrior)
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
+        dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
+    end
+
+    return dim_dict
 end
 
 
