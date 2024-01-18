@@ -51,19 +51,9 @@ function model_train(
     train_loss = Float32[]
     val_loss = Float32[]
 
-    dict_weights = Dict()
-    dict_dims = Dict()
     if track_weights
-        for layer in model
-            l_name = split(string(layer), "(")[1]
-            dict_weights[l_name] = Dict()
-            dict_dims[l_name] = Dict()
-            for (pos, param) in enumerate(Flux.params(layer))
-                param_size = size(param)
-                dict_weights[l_name][string(pos)] = zeros32(param_size..., n_iter)
-                dict_dims[l_name][string(pos)] = ntuple(_ -> (:), length(param_size))
-            end
-        end
+        dict_weights = FluxStats.WeightTracking.weight_container_init(model, n_iter=n_iter)
+        dict_dims = FluxStats.WeightTracking.container_dim_init(model)
     end
 
     for epoch in 1:n_iter

@@ -128,19 +128,26 @@ function Penalties.penalty(l::ScaleMixtureDense)
     -sum(Distributions.logpdf.(l.prior_scale, scale)) - l.lambda * sum(Distributions.logpdf.(prior_weight, l.weight))
 end
 
-# Extend weight tracking function
+# Extend weights tracking function
 function WeightTracking.weight_container_init(layer::ScaleMixtureDense; n_iter::Int64)
     w_dict = Dict()
-    dim_dict = Dict()
     for (pos, param) in enumerate(Flux.params(layer))
         param_size = size(param)
         w_dict[string(pos)] = zeros32(param_size..., n_iter)
+    end
+
+    return w_dict
+end
+
+function WeightTracking.container_dim_init(layer::ScaleMixtureDense)
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
         dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
     end
 
-    return w_dict, dim_dict
+    return dim_dict
 end
-
 
 """
     Dense layer with prior distribution on weights.
@@ -179,14 +186,22 @@ end
 # Extend weight tracking function
 function WeightTracking.weight_container_init(layer::DensePrior; n_iter::Int64)
     w_dict = Dict()
-    dim_dict = Dict()
     for (pos, param) in enumerate(Flux.params(layer))
         param_size = size(param)
         w_dict[string(pos)] = zeros32(param_size..., n_iter)
+    end
+
+    return w_dict
+end
+
+function WeightTracking.container_dim_init(layer::DensePrior)
+    dim_dict = Dict()
+    for (pos, param) in enumerate(Flux.params(layer))
+        param_size = size(param)
         dim_dict[string(pos)] = ntuple(_ -> (:), length(param_size))
     end
 
-    return w_dict, dim_dict
+    return dim_dict
 end
 
 
