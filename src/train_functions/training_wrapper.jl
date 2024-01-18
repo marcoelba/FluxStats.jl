@@ -36,7 +36,7 @@ function model_train(
     # ---------- Input cheks -------------
     # Check dimensions of model output and loss input
     try
-        out_model = mean_model(X_train)
+        out_model = model(X_train)
         loss_function(y_train, out_model...)
     catch err
         throw("Model output and loss input sizes do not match")
@@ -51,6 +51,7 @@ function model_train(
     train_loss = Float32[]
     val_loss = Float32[]
 
+    dict_weights = nothing
     if track_weights
         dict_weights = FluxStats.WeightTracking.weight_container_init(model, n_iter=n_iter)
         dict_dims = FluxStats.WeightTracking.container_dim_init(model)
@@ -74,12 +75,7 @@ function model_train(
         end
 
         if track_weights
-            for layer in model
-                l_name = split(string(layer), "(")[1]
-                for (pos, param) in enumerate(Flux.params(layer))
-                    dict_weights[l_name][string(pos)][dict_dims[l_name][string(pos)]..., epoch] = param
-                end
-            end
+            WeightTracking.weight_tracking_push!(epoch, model, dict_weights, dict_dims)
         end
     end
 

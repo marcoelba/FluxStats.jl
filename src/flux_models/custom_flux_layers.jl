@@ -139,6 +139,12 @@ function WeightTracking.weight_container_init(layer::ScaleMixtureDense; n_iter::
     return w_dict
 end
 
+function WeightTracking.weight_tracking_push!(epoch::Int64, layer::ScaleMixtureDense, dict_weights_layer::Dict, dict_dims_layer::Dict)
+    for (pos, param) in enumerate(Flux.params(layer))
+        dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
+    end
+end
+
 function WeightTracking.container_dim_init(layer::ScaleMixtureDense)
     dim_dict = Dict()
     for (pos, param) in enumerate(Flux.params(layer))
@@ -192,6 +198,12 @@ function WeightTracking.weight_container_init(layer::DensePrior; n_iter::Int64)
     end
 
     return w_dict
+end
+
+function WeightTracking.weight_tracking_push!(epoch::Int64, layer::DensePrior, dict_weights_layer::Dict, dict_dims_layer::Dict)
+    for (pos, param) in enumerate(Flux.params(layer))
+        dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
+    end
 end
 
 function WeightTracking.container_dim_init(layer::DensePrior)

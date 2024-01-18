@@ -56,4 +56,20 @@ function container_dim_init(chain::Flux.Chain)
 end
 
 
+# --------------- weights tracking update ---------------
+
+function weight_tracking_push!(epoch::Int64, layer::Flux.Dense, dict_weights_layer::Dict, dict_dims_layer::Dict)
+    for (pos, param) in enumerate(Flux.params(layer))
+        dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
+    end
+end
+
+function weight_tracking_push!(epoch::Int64, chain::Flux.Chain, dict_weights::Dict, dict_dims::Dict)
+    for layer in chain
+        layer_name = split(string(layer), "(")[1]
+        weight_tracking_push!(epoch, layer, dict_weights[layer_name], dict_dims[layer_name])
+    end
+end
+
+
 end # module

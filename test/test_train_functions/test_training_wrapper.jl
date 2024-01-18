@@ -45,15 +45,15 @@ model = FluxStats.FunctionalFluxModel.FluxRegModel(
 )
 
 
-@testset "wrapper" begin
+@testset "training_wrapper" begin
     results = FluxStats.model_train(
-        (X_train, [1f0]),
+        X_train,
         y_train;
         model=model,
         loss_function=FluxStats.Losses.negloglik_normal,
         optim=optim,
         n_iter=n_iter,
-        X_val=(X_val, [1f0]),
+        X_val=X_val,
         y_val=y_val,
         track_weights=false
     )
@@ -64,8 +64,34 @@ model = FluxStats.FunctionalFluxModel.FluxRegModel(
     @test "val_loss" in keys(results)
     @test "model" in keys(results)
     @test "dict_weights" in keys(results)
+    @test isnothing(results["dict_weights"])
 
     @test length(results["train_loss"]) == n_iter
     @test length(results["val_loss"]) == n_iter
+
+
+    # with weights tracking
+    results = FluxStats.model_train(
+        X_train,
+        y_train;
+        model=model,
+        loss_function=FluxStats.Losses.negloglik_normal,
+        optim=optim,
+        n_iter=n_iter,
+        X_val=X_val,
+        y_val=y_val,
+        track_weights=true
+    )
+
+    @test typeof(results) <: Dict
+    @test length(keys(results)) == 4
+    @test "train_loss" in keys(results)
+    @test "val_loss" in keys(results)
+    @test "model" in keys(results)
+    @test "dict_weights" in keys(results)
+    @test typeof(results["dict_weights"]) <: Dict
     
+    @test length(results["train_loss"]) == n_iter
+    @test length(results["val_loss"]) == n_iter
+
 end

@@ -65,6 +65,11 @@ function WeightTracking.weight_container_init(model::FluxRegModel; n_iter::Int64
     return w_dict
 end
 
+function WeightTracking.weight_tracking_push!(epoch::Int64, model::FluxRegModel, dict_weights::Dict, dict_dims::Dict)
+    WeightTracking.weight_tracking_push!(epoch, model.chain_mean, dict_weights["chain_mean"], dict_dims["chain_mean"])
+    WeightTracking.weight_tracking_push!(epoch, model.chain_var, dict_weights["chain_var"], dict_dims["chain_var"])
+end
+
 function WeightTracking.container_dim_init(model::FluxRegModel)
     dim_dict = Dict()
     dim_dict["chain_mean"] = WeightTracking.container_dim_init(model.chain_mean)
