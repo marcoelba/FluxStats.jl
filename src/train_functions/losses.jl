@@ -34,7 +34,7 @@ function negloglik(x::Array{Float32}, model_predictions::Tuple, negloglik_functi
 end
 
 """
-    negloglik_normal(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=[1f0])
+        gaussian_negloglik(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=Flux.ones32(size(mu)...))
 
     Compute the Gaussian negative loglikelihood over all provided input.
 
@@ -49,9 +49,9 @@ end
         6.2681103f0
         ```
 """
-function negloglik_normal(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=[1f0])
+function gaussian_negloglik(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=Flux.ones32(size(mu)...))
     distribution = Distributions.Normal{Float32}.(mu, sigma)
-    -sum(Distributions.logpdf.(distribution, x))
+    -mean(Distributions.logpdf.(distribution, x))
 end
 
 

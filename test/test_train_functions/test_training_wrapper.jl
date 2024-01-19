@@ -9,7 +9,7 @@ using FluxStats
 p = 2
 n = 3
 # dims: p x n
-X_train = ones32(p, n)
+X_train = Float32.(vcat([1;; 2;; -1], [1;; 1;; 1]))
 X_val = ones32(p, n) .* 0.5f0
 y_train = ones32(1, n)
 y_val = ones32(1, n) .* 0.8f0
@@ -50,7 +50,7 @@ model = FluxStats.FunctionalFluxModel.FluxRegModel(
         X_train,
         y_train;
         model=model,
-        loss_function=FluxStats.Losses.negloglik_normal,
+        loss_function=FluxStats.Losses.gaussian_negloglik,
         optim=optim,
         n_iter=n_iter,
         X_val=X_val,
@@ -75,7 +75,7 @@ model = FluxStats.FunctionalFluxModel.FluxRegModel(
         X_train,
         y_train;
         model=model,
-        loss_function=FluxStats.Losses.negloglik_normal,
+        loss_function=FluxStats.Losses.gaussian_negloglik,
         optim=optim,
         n_iter=n_iter,
         X_val=X_val,
@@ -94,4 +94,35 @@ model = FluxStats.FunctionalFluxModel.FluxRegModel(
     @test length(results["train_loss"]) == n_iter
     @test length(results["val_loss"]) == n_iter
 
+end
+
+@testset "test only model prediction" begin
+    # set specific parameters
+    model.chain_mean[1].weight .= [1f0;; 2f0]
+    model.chain_mean[1].scale .= [0.5f0;; 1.5f0]
+    model.chain_mean[1].bias .= [1f0]
+
+    model.chain_var[1].dense_layer.weight .= 1.5f0
+
+    model_pred = model(X_train)
+    tot1 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik)
+
+    model_pred = ([1f0;; 1f0;; 1f0], [1f0;; 1f0;; 1f0])
+    tot2 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik)
+
+    @test tot2 <= tot1
+
+    # test if sum of single prediction losses is equal to the total
+    y_pred = [1f0;; 2f0;; 3f0]
+    sum_ind = 0f0
+    for (pos, y) in enumerate(y_pred)
+        model_pred = ([y], [1f0])
+        sum_ind += FluxStats.Losses.negloglik([1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
+    end
+
+    model_pred = (y_pred, [1f0;; 1f0;; 1f0])
+    sum_tot = FluxStats.Losses.negloglik([1f0;; 1f0;; 1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
+
+    @test sum_ind == sum_tot
+    
 end
