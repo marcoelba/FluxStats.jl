@@ -15,6 +15,7 @@ using FluxStats: Penalties, CustomFluxLayers, FunctionalFluxModel, Losses
         y_train::Matrix{Float32};
         model::Union{Flux.Chain, FunctionalFluxModel.FluxRegModel},
         loss_function,
+        aggregation_function,
         optim::Flux.Optimise.AbstractOptimiser,
         n_iter::Integer,
         X_val::Union{Matrix{Float32}, Nothing}=nothing,
@@ -29,6 +30,7 @@ function model_train(
     loss_function,
     optim::Flux.Optimise.AbstractOptimiser,
     n_iter::Integer,
+    aggregation_function=FluxStats.mean,
     X_val::Union{Array{Float32}, Tuple{Array{Float32}, Array{Float32}}, Nothing}=nothing,
     y_val::Union{Array{Float32}, Nothing}=nothing,
     track_weights::Bool=false
@@ -62,7 +64,7 @@ function model_train(
         loss, grads = Flux.withgradient(model) do m
             # Evaluate model and loss inside gradient context:
             model_predictions = m(X_train)
-            Losses.negloglik(y_train, model_predictions, loss_function) + Penalties.penalty(m)
+            Losses.negloglik(y_train, model_predictions, loss_function, aggregation_function) + Penalties.penalty(m)
         end
         Flux.update!(optim, model, grads[1])
         push!(train_loss, loss)  # logging, outside gradient context
@@ -70,7 +72,7 @@ function model_train(
         # validation
         if !isnothing(y_val)
             model_predictions_val = model(X_val)
-            v_loss = Losses.negloglik(y_val, model_predictions_val, loss_function)
+            v_loss = Losses.negloglik(y_val, model_predictions_val, loss_function, aggregation_function)
             push!(val_loss, v_loss)
         end
 
