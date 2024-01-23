@@ -49,9 +49,14 @@ end
         6.2681103f0
         ```
 """
-function gaussian_negloglik(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=Flux.ones32(size(mu)...))
+function gaussian_negloglik(
+    x::Array{Float32},
+    mu::Array{Float32},
+    sigma::Array{Float32}=Flux.ones32(size(mu)...);
+    aggregation_function=mean
+    )
     distribution = Distributions.Normal{Float32}.(mu, sigma)
-    -mean(Distributions.logpdf.(distribution, x))
+    -aggregation_function(Distributions.logpdf.(distribution, x))
 end
 
 

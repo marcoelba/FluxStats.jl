@@ -119,10 +119,11 @@ end
         model_pred = ([y], [1f0])
         sum_ind += FluxStats.Losses.negloglik([1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
     end
+    mean_sum_ind = sum_ind / 3f0
 
     model_pred = (y_pred, [1f0;; 1f0;; 1f0])
     sum_tot = FluxStats.Losses.negloglik([1f0;; 1f0;; 1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
 
-    @test sum_ind == sum_tot
+    @test round(mean_sum_ind, digits=5) == round(sum_tot, digits=5)
     
 end
