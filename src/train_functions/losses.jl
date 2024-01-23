@@ -6,12 +6,13 @@ using Distributions
 
 
 """
-    negloglik(x::Array{Float32}, model_predictions::Array{Float32}, negloglik_function)
+    negloglik(x::Array{Float32}, model_predictions::Array{Float32}, negloglik_function, aggregation_function)
 
     Compute the sum negative loglikelihood (or loss) over all provided input.
 
     # Arguments
         negloglik_function: must have the same number of input parameters as the number of output from the model PLUS the true label
+        aggregation_function: how to aggregate the loss values over batch (eg sum, mean)
 
     # Examples
         ```jldoctest
@@ -25,12 +26,12 @@ using Distributions
         6.2681103f0
         ```
 """
-function negloglik(x::Array{Float32}, model_predictions::Array{Float32}, negloglik_function)
-    negloglik_function(x, model_predictions)
+function negloglik(x::Array{Float32}, model_predictions::Array{Float32}, negloglik_function, aggregation_function)
+    aggregation_function(negloglik_function(x, model_predictions))
 end
 
-function negloglik(x::Array{Float32}, model_predictions::Tuple, negloglik_function)
-    negloglik_function(x, model_predictions...)
+function negloglik(x::Array{Float32}, model_predictions::Tuple, negloglik_function, aggregation_function)
+    aggregation_function(negloglik_function(x, model_predictions...))
 end
 
 """
@@ -52,11 +53,10 @@ end
 function gaussian_negloglik(
     x::Array{Float32},
     mu::Array{Float32},
-    sigma::Array{Float32}=Flux.ones32(size(mu)...);
-    aggregation_function=mean
+    sigma::Array{Float32}=Flux.ones32(size(mu)...)
     )
     distribution = Distributions.Normal{Float32}.(mu, sigma)
-    -aggregation_function(Distributions.logpdf.(distribution, x))
+    -Distributions.logpdf.(distribution, x)
 end
 
 

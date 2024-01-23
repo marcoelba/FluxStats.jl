@@ -105,10 +105,10 @@ end
     model.chain_var[1].dense_layer.weight .= 1.5f0
 
     model_pred = model(X_train)
-    tot1 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik)
+    tot1 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik, sum)
 
     model_pred = ([1f0;; 1f0;; 1f0], [1f0;; 1f0;; 1f0])
-    tot2 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik)
+    tot2 = FluxStats.Losses.negloglik(y_train, model_pred, FluxStats.Losses.gaussian_negloglik, sum)
 
     @test tot2 <= tot1
 
@@ -117,13 +117,12 @@ end
     sum_ind = 0f0
     for (pos, y) in enumerate(y_pred)
         model_pred = ([y], [1f0])
-        sum_ind += FluxStats.Losses.negloglik([1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
+        sum_ind += FluxStats.Losses.negloglik([1f0], model_pred, FluxStats.Losses.gaussian_negloglik, sum)
     end
-    mean_sum_ind = sum_ind / 3f0
 
     model_pred = (y_pred, [1f0;; 1f0;; 1f0])
-    sum_tot = FluxStats.Losses.negloglik([1f0;; 1f0;; 1f0], model_pred, FluxStats.Losses.gaussian_negloglik)
+    sum_tot = FluxStats.Losses.negloglik([1f0;; 1f0;; 1f0], model_pred, FluxStats.Losses.gaussian_negloglik, sum)
 
-    @test round(mean_sum_ind, digits=5) == round(sum_tot, digits=5)
+    @test round(sum_ind, digits=5) == round(sum_tot, digits=5)
     
 end
