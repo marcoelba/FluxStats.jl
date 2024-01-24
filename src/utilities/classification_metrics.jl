@@ -11,8 +11,8 @@ module classification_metrics
         Calculate the False Discovery Rate from a given set of coefficients
     """
     function false_discovery_rate(;
-        true_coef::Union{Vector{Float64}, BitVector},
-        estimated_coef::Union{Vector{Float64}, BitVector}
+        true_coef::Union{Array{Real}, BitVector},
+        estimated_coef::Union{Array{Real}, BitVector}
         )
 
         sum_coef = true_coef + estimated_coef
@@ -44,8 +44,8 @@ module classification_metrics
         - `estimated_coef::BitVector`: boolean vector of estimated coefficients, '1' refers to a coef != 0 and '0' otherwise.
     """
     function true_positive_rate(;
-        true_coef::Union{Vector{Float64}, BitVector},
-        estimated_coef::Union{Vector{Float64}, BitVector}
+        true_coef::Union{Array{Real}, BitVector},
+        estimated_coef::Union{Array{Real}, BitVector}
         )
 
         sum_coef = true_coef + estimated_coef
@@ -64,8 +64,8 @@ module classification_metrics
             )
     """
     function power(;
-        true_coef::Union{Vector{Float64}, BitVector},
-        estimated_coef::Union{Vector{Float64}, BitVector}
+        true_coef::Union{Array{Real}, BitVector},
+        estimated_coef::Union{Array{Real}, BitVector}
         )
 
         sum_coef = true_coef + estimated_coef
@@ -83,7 +83,7 @@ module classification_metrics
         
         False Discovery Rate adjusted p-values using Benjamini-Hochberg procedure
     """
-    function bh_correction(;p_values::Vector{Float64}, fdr_level::Float64)
+    function bh_correction(;p_values::Array{Real}, fdr_level::Real)
         if fdr_level > 1.
             throw(error("fdr_level MUST be <= 1"))
         end
@@ -110,7 +110,7 @@ module classification_metrics
     """
     Compute collection of metrics
     """
-    function wrapper_metrics(true_coef, pred_coef)
+    function wrapper_metrics(true_coef::Array{Real}, pred_coef::Array{Real})
         # FDR
         fdr = false_discovery_rate(
             true_coef=true_coef,
