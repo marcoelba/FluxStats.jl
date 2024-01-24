@@ -29,13 +29,13 @@ mean_model = Chain(
         (p => 1);
         bias=true,
         lambda=lambda,
-        prior_scale=Distributions.Truncated(Cauchy(0f0, scale_half_cauchy), 0f0, Inf32)
+        prior_scale=Distributions.truncated(Cauchy(0f0, scale_half_cauchy), 0f0, Inf32)
     )
 )
 var_model = Chain(
     (FluxStats.CustomFluxLayers.DensePrior(
         Flux.Dense((1 => 1), Flux.softplus; bias=false),
-        Distributions.TruncatedNormal(0f0, scale_half_norm, 0f0, Inf32)
+        Distributions.truncated(Normal(0f0, scale_half_norm), 0f0, Inf32)
     ))
 )
 

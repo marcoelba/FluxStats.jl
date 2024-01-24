@@ -85,7 +85,7 @@ struct ScaleMixtureDense{M <: AbstractMatrix, B, F, L<:Float32, P<:Distributions
         bias::B = true,
         activation::F = identity,
         lambda::L = 0f0,
-        prior_scale::P = Distributions.TruncatedNormal(0f0, 10f0, 0f0, Inf32)
+        prior_scale::P = Distributions.truncated(Distributions.Normal(0f0, 10f0), 0f0, Inf32)
     ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, P}
         b = Flux.create_bias(W, bias, size(W, 1))
         new{M, typeof(b), F, L, P}(W, S, b, activation, lambda, prior_scale)
@@ -98,7 +98,7 @@ ScaleMixtureDense(
     activation=identity,
     init=Flux.glorot_normal,
     lambda=0f0,
-    prior_scale=Distributions.TruncatedNormal(0f0, 10f0, 0f0, Inf32)
+    prior_scale=Distributions.truncated(Distributions.Normal(0f0, 10f0), 0f0, Inf32)
 ) = ScaleMixtureDense(init(out, in), init(out, in), bias, activation, lambda, prior_scale)
 
 Flux.@functor ScaleMixtureDense
@@ -125,7 +125,10 @@ function Penalties.penalty(l::ScaleMixtureDense)
     scale = Flux.softplus.(l.scale)
     prior_weight = Distributions.Normal.(0f0, scale)
 
-    -sum(Distributions.logpdf.(l.prior_scale, scale)) - l.lambda * sum(Distributions.logpdf.(prior_weight, l.weight))
+    -l.lambda * (
+        sum(Distributions.logpdf.(l.prior_scale, scale)) +
+        sum(Distributions.logpdf.(prior_weight, l.weight))
+    )
 end
 
 # Extend weights tracking function

@@ -42,7 +42,7 @@ end
     name_l1 = "Dense"
     l2 = FluxStats.CustomFluxLayers.DensePrior(
         Flux.Dense((p2 => 1), Flux.softplus; bias=false),
-        Distributions.TruncatedNormal(0f0, 3f0, 0f0, Inf32)
+        Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
     )
     name_l2 = "DensePrior"
     chain = Flux.Chain(l1, l2)
@@ -62,7 +62,7 @@ end
     name_l1 = "Dense"
     l2 = FluxStats.CustomFluxLayers.DensePrior(
         Flux.Dense((p2 => 1), Flux.softplus; bias=false),
-        Distributions.TruncatedNormal(0f0, 3f0, 0f0, Inf32)
+        Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
     )
     name_l2 = "DensePrior"
     chain = Flux.Chain(l1, l2)
@@ -82,7 +82,7 @@ end
         (p => 1);
         bias=true,
         lambda=1f0,
-        prior_scale=Distributions.Truncated(Cauchy(0f0, 3f0), 0f0, Inf32)
+        prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 3f0), 0f0, Inf32)
     )
     output = WeightTracking.weight_container_init(sm, n_iter=n_iter)
 
@@ -111,7 +111,7 @@ end
     p = 1
     dp = FluxStats.CustomFluxLayers.DensePrior(
         Flux.Dense((p => 1), Flux.softplus; bias=false),
-        Distributions.TruncatedNormal(0f0, 3f0, 0f0, Inf32)
+        Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
     )
     output = WeightTracking.weight_container_init(dp, n_iter=n_iter)
 
@@ -136,13 +136,13 @@ end
             (p => 1);
             bias=true,
             lambda=1f0,
-            prior_scale=Distributions.Truncated(Cauchy(0f0, 1f0), 0f0, Inf32)
+            prior_scale=Distributions.truncated(Cauchy(0f0, 1f0), 0f0, Inf32)
         )
     )
     var_model = Chain(
         (FluxStats.CustomFluxLayers.DensePrior(
             Flux.Dense((1 => 1), Flux.softplus; bias=false),
-            Distributions.TruncatedNormal(0f0, 1f0, 0f0, Inf32)
+            Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
         ))
     )
 
@@ -201,7 +201,7 @@ end
     name_l1 = "Dense"
     l2 = FluxStats.CustomFluxLayers.DensePrior(
         Flux.Dense((p2 => 1), Flux.softplus; bias=false),
-        Distributions.TruncatedNormal(0f0, 3f0, 0f0, Inf32)
+        Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
     )
     name_l2 = "DensePrior"
     chain = Flux.Chain(l1, l2)
@@ -227,13 +227,13 @@ end
             (p => 1);
             bias=true,
             lambda=1f0,
-            prior_scale=Distributions.Truncated(Cauchy(0f0, 1f0), 0f0, Inf32)
+            prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
         )
     )
     var_model = Chain(
         (FluxStats.CustomFluxLayers.DensePrior(
             Flux.Dense((1 => 1), Flux.softplus; bias=false),
-            Distributions.TruncatedNormal(0f0, 1f0, 0f0, Inf32)
+            Distributions.truncated(Distributions.Normal(0f0, 3f0), 0f0, Inf32)
         ))
     )
     model = FluxStats.FunctionalFluxModel.FluxRegModel(
