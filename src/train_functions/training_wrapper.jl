@@ -30,7 +30,7 @@ function model_train(
     loss_function,
     optim::Flux.Optimise.AbstractOptimiser,
     n_iter::Integer,
-    aggregation_function=FluxStats.mean,
+    aggregation_function=FluxStats.sum,
     X_val::Union{Array{Float32}, Tuple{Array{Float32}, Array{Float32}}, Nothing}=nothing,
     y_val::Union{Array{Float32}, Nothing}=nothing,
     track_weights::Bool=false
