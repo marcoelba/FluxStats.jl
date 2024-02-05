@@ -58,6 +58,57 @@ end
 
 
 """
+    ElementwiseScale(
+        p::Integer;
+        init=ones32,
+        activation=identity,
+        prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
+    )
+
+"""
+struct ElementwiseScale{M<:AbstractArray, F, P<:Distributions.Distribution}
+    scale::M
+    scale_pos::M
+    activation::F
+    prior_scale::P
+    function ElementwiseScale(
+        scale::M, activation::F=identity, prior_scale::P=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
+        ) where {M<:AbstractArray, F, P<:Distributions.Distribution}
+        scale_pos = Flux.softplus.(scale)
+        new{M, F, P}(scale, scale_pos, activation, prior_scale)
+    end
+end
+
+ElementwiseScale(
+    p::Integer;
+    init=ones32,
+    activation=identity,
+    prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
+) = ElementwiseScale(init(p), activation, prior_scale)
+
+Flux.@functor ElementwiseScale
+
+function (l::ElementwiseScale)(x::AbstractArray)
+    scale_transorm = Flux.softplus.(l.scale)
+    l.scale_pos .= Zygote.ignore_derivatives(scale_transorm)
+    l.scale_pos .* x
+end
+
+function Base.show(io::IO, l::ElementwiseScale)
+    println(io, "ElementwiseScale(")
+    println(io, "\t", size(l.scale, 2), ";")
+    println(io, "\t", "activation = ", l.activation, ",")
+    println(io, "\t", "prior_scale = ", l.prior_scale, ",")
+    print(io, ")")
+end
+
+# Add penalty for MyScale
+function Penalties.penalty(l::ElementwiseScale)
+    -sum(Distributions.logpdf.(l.prior_scale, l.scale_pos))
+end
+
+
+"""
     ScaleMixtureDense(
         (in, out)::Pair{<:Integer, <:Integer};
         bias=true,
