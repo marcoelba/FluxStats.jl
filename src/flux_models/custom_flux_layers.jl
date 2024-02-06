@@ -3,6 +3,7 @@ module CustomFluxLayers
 
 using Flux
 using Distributions
+using Zygote
 
 # Internal
 using FluxStats
@@ -54,6 +55,50 @@ end
 # Add penalty for MyScale
 function Penalties.penalty(l::MyScale)
     l.lambda * FluxStats.Losses.huber(sum(Flux.sigmoid_fast.(l.scale)) - 1.f0)
+end
+
+
+"""
+    ElementwiseScale(
+        p::Integer;
+        init=ones32,
+        activation=identity,
+        prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
+    )
+
+"""
+struct ElementwiseScale{M<:AbstractArray, F, P<:Distributions.Distribution}
+    scale::M
+    activation::F
+    prior_scale::P
+end
+
+ElementwiseScale(
+    p::Integer;
+    init=ones32,
+    activation=identity,
+    prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
+) = ElementwiseScale(init(p, 1), activation, prior_scale)
+
+Flux.@functor ElementwiseScale
+
+function (l::ElementwiseScale)(x::AbstractArray)
+    scale_pos = Flux.softplus.(l.scale)
+    x_scaled = scale_pos .* x
+    return (x_scaled, scale_pos)
+end
+
+function Base.show(io::IO, l::ElementwiseScale)
+    println(io, "ElementwiseScale(")
+    println(io, "\t", size(l.scale, 2), ";")
+    println(io, "\t", "activation = ", l.activation, ",")
+    println(io, "\t", "prior_scale = ", l.prior_scale, ",")
+    print(io, ")")
+end
+
+# Add penalty for MyScale
+function Penalties.penalty(l::ElementwiseScale)
+    -sum(Distributions.logpdf.(l.prior_scale, l.scale_pos))
 end
 
 
