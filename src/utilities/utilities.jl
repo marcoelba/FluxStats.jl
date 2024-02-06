@@ -1,8 +1,9 @@
 # utilities
-module utilities
+module Utilities
 
 using Random
 using StatsBase
+using Distributions
 
 """
     Normalise data between a given min and max
@@ -39,5 +40,20 @@ function shrinking_coeffs(;lambda, tau, n, sigma2_y=1., var_x=1.)
     k_s = 1. .- 1. ./ (1 .+ pd)
     return k_s
 end
+
+
+"""
+     weights initalisers
+"""
+function init_weights(in, out)
+    distro = Distributions.Normal(0f0, 0.01f0)
+    return rand(distro, (in, out))
+end
+
+function init_scales(in, out)
+    distro = Distributions.Normal(-2f0, 0.05f0)
+    return rand(distro, (in, out))
+end
+
 
 end

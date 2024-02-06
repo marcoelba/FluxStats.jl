@@ -7,7 +7,7 @@ using Zygote
 
 # Internal
 using FluxStats
-using FluxStats: Penalties, WeightTracking
+using FluxStats: Penalties, WeightTracking, Utilities
 
 
 """
@@ -141,10 +141,11 @@ ScaleMixtureDense(
     (in, out)::Pair{<:Integer, <:Integer};
     bias=true,
     activation=identity,
-    init=Flux.glorot_normal,
+    init_weights=Utilities.init_weights,
+    init_scales=Utilities.init_scales,
     lambda=0f0,
     prior_scale=Distributions.truncated(Distributions.Normal(0f0, 10f0), 0f0, Inf32)
-) = ScaleMixtureDense(init(out, in), init(out, in), bias, activation, lambda, prior_scale)
+) = ScaleMixtureDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda, prior_scale)
 
 Flux.@functor ScaleMixtureDense
 
