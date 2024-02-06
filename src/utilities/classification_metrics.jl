@@ -110,7 +110,7 @@ module classification_metrics
     """
     Compute collection of metrics
     """
-    function wrapper_metrics(true_coef::Array{Real}, pred_coef::Array{Real})
+    function wrapper_metrics(true_coef::Union{Array{Real}, BitVector}, pred_coef::Union{Array{Real}, BitVector})
         # FDR
         fdr = false_discovery_rate(
             true_coef=true_coef,
