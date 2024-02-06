@@ -3,6 +3,7 @@ module CustomFluxLayers
 
 using Flux
 using Distributions
+using Zygote
 
 # Internal
 using FluxStats
@@ -68,15 +69,8 @@ end
 """
 struct ElementwiseScale{M<:AbstractArray, F, P<:Distributions.Distribution}
     scale::M
-    scale_pos::M
     activation::F
     prior_scale::P
-    function ElementwiseScale(
-        scale::M, activation::F=identity, prior_scale::P=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
-        ) where {M<:AbstractArray, F, P<:Distributions.Distribution}
-        scale_pos = Flux.softplus.(scale)
-        new{M, F, P}(scale, scale_pos, activation, prior_scale)
-    end
 end
 
 ElementwiseScale(
@@ -84,14 +78,14 @@ ElementwiseScale(
     init=ones32,
     activation=identity,
     prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
-) = ElementwiseScale(init(p), activation, prior_scale)
+) = ElementwiseScale(init(p, 1), activation, prior_scale)
 
 Flux.@functor ElementwiseScale
 
 function (l::ElementwiseScale)(x::AbstractArray)
-    scale_transorm = Flux.softplus.(l.scale)
-    l.scale_pos .= Zygote.ignore_derivatives(scale_transorm)
-    l.scale_pos .* x
+    scale_pos = Flux.softplus.(l.scale)
+    x_scaled = scale_pos .* x
+    return (x_scaled, scale_pos)
 end
 
 function Base.show(io::IO, l::ElementwiseScale)
