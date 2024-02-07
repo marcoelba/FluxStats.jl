@@ -81,7 +81,6 @@ end
     sm = FluxStats.CustomFluxLayers.ScaleMixtureDense(
         (p => 1);
         bias=true,
-        lambda=1f0,
         prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 3f0), 0f0, Inf32)
     )
     output = WeightTracking.weight_container_init(sm, n_iter=n_iter)
@@ -135,7 +134,6 @@ end
         FluxStats.CustomFluxLayers.ScaleMixtureDense(
             (p => 1);
             bias=true,
-            lambda=1f0,
             prior_scale=Distributions.truncated(Cauchy(0f0, 1f0), 0f0, Inf32)
         )
     )
@@ -226,7 +224,6 @@ end
         FluxStats.CustomFluxLayers.ScaleMixtureDense(
             (p => 1);
             bias=true,
-            lambda=1f0,
             prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 1f0), 0f0, Inf32)
         )
     )
