@@ -121,7 +121,8 @@ struct ScaleMixtureDense{M <: AbstractMatrix, B, F, L<:Float32, P<:Distributions
     scale::M
     bias::B
     activation::F
-    lambda::L
+    lambda_weights::L
+    lambda_scales::L
     prior_scale::P
 
     function ScaleMixtureDense(
@@ -129,11 +130,12 @@ struct ScaleMixtureDense{M <: AbstractMatrix, B, F, L<:Float32, P<:Distributions
         S::M,
         bias::B = true,
         activation::F = identity,
-        lambda::L = 0f0,
-        prior_scale::P = Distributions.truncated(Distributions.Normal(0f0, 10f0), 0f0, Inf32)
+        lambda_weights::L=1f0,
+        lambda_scales::L=1f0,
+        prior_scale::P = Distributions.truncated(Distributions.Cauchy(0f0, 5f0), 0f0, Inf32)
     ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, P}
         b = Flux.create_bias(W, bias, size(W, 1))
-        new{M, typeof(b), F, L, P}(W, S, b, activation, lambda, prior_scale)
+        new{M, typeof(b), F, L, P}(W, S, b, activation, lambda_weights, lambda_scales, prior_scale)
     end
 end
 
@@ -143,9 +145,10 @@ ScaleMixtureDense(
     activation=identity,
     init_weights=Utilities.init_weights,
     init_scales=Utilities.init_scales,
-    lambda=0f0,
-    prior_scale=Distributions.truncated(Distributions.Normal(0f0, 10f0), 0f0, Inf32)
-) = ScaleMixtureDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda, prior_scale)
+    lambda_weights=1f0,
+    lambda_scales=1f0,
+    prior_scale=Distributions.truncated(Distributions.Cauchy(0f0, 5f0), 0f0, Inf32)
+) = ScaleMixtureDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda_weights, lambda_scales, prior_scale)
 
 Flux.@functor ScaleMixtureDense
 
@@ -160,7 +163,8 @@ function Base.show(io::IO, l::ScaleMixtureDense)
     println(io, "\t", size(l.weight, 2), " => ", size(l.weight, 1), ";")
     println(io, "\t", "activation = ", l.activation, ",")
     println(io, "\t", "bias = ", l.bias, ",")
-    println(io, "\t", "lambda = ", l.lambda, ",")
+    println(io, "\t", "lambda_weights = ", l.lambda_weights, ",")
+    println(io, "\t", "lambda_scales = ", l.lambda_scales, ",")
     println(io, "\t", "prior_scale = ", l.prior_scale, ",")
     print(io, ")")
 end
@@ -171,9 +175,9 @@ function Penalties.penalty(l::ScaleMixtureDense)
     scale = Flux.softplus.(l.scale)
     prior_weight = Distributions.Normal.(0f0, scale)
 
-    -l.lambda * (
-        sum(Distributions.logpdf.(l.prior_scale, scale)) +
-        sum(Distributions.logpdf.(prior_weight, l.weight))
+    -(
+        l.lambda_scales * sum(Distributions.logpdf.(l.prior_scale, scale)) +
+        l.lambda_weights * sum(Distributions.logpdf.(prior_weight, l.weight))
     )
 end
 

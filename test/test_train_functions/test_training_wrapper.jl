@@ -15,7 +15,6 @@ y_train = ones32(1, n)
 y_val = ones32(1, n) .* 0.8f0
 
 # Define model params
-lambda = 0.1f0
 scale_half_cauchy = 3f0
 scale_half_norm = 5f0
 n_iter = 10
@@ -28,7 +27,6 @@ mean_model = Chain(
     FluxStats.CustomFluxLayers.ScaleMixtureDense(
         (p => 1);
         bias=true,
-        lambda=lambda,
         prior_scale=Distributions.truncated(Cauchy(0f0, scale_half_cauchy), 0f0, Inf32)
     )
 )
