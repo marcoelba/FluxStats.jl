@@ -29,6 +29,8 @@ function model_train(
     model::Union{Flux.Chain, FunctionalFluxModel.FluxRegModel},
     loss_function,
     optim::Flux.Optimise.AbstractOptimiser,
+    use_noisy_gradient::Bool=false,
+    gradient_noise_scale::Float32=0.01f0,
     n_iter::Integer,
     aggregation_function=FluxStats.mean,
     X_val::Union{Array{Float32}, Tuple{Array{Float32}, Array{Float32}}, Nothing}=nothing,
@@ -67,6 +69,11 @@ function model_train(
             Losses.negloglik(y_train, model_predictions, loss_function, aggregation_function) + Penalties.penalty(m)
         end
         Flux.update!(optim, model, grads[1])
+        if use_noisy_gradient
+            for par in Flux.params(model)
+                par .+= gradient_noise_scale .* randn(size(par))
+            end        
+        end
         push!(train_loss, loss)  # logging, outside gradient context
 
         # validation
