@@ -646,7 +646,7 @@ end
 
 
 """
-    TanhDenseMix(
+    SigmoidDense(
         (in, out)::Pair{<:Integer, <:Integer};
         bias=true,
         activation=identity,
@@ -659,7 +659,7 @@ end
     Works like a standard Dense layer, but creates a set of additional scale coefficients (one for each weight),
         which are used in the weights loss function.
 """
-struct TanhDenseMix{M <: AbstractMatrix, B, F, L<:Float32, P_W<:Distributions.Distribution}
+struct SigmoidDense{M <: AbstractMatrix, B, F, L<:Float32, P_W<:Distributions.Distribution, P_S<:Distributions.Distribution}
     weight::M
     scale::M
     bias::B
@@ -667,8 +667,9 @@ struct TanhDenseMix{M <: AbstractMatrix, B, F, L<:Float32, P_W<:Distributions.Di
     lambda_weights::L
     lambda_scales::L
     prior_weight::P_W
+    prior_scale::P_S
 
-    function TanhDenseMix(
+    function SigmoidDense(
         W::M,
         S::M,
         bias::B = true,
@@ -676,13 +677,14 @@ struct TanhDenseMix{M <: AbstractMatrix, B, F, L<:Float32, P_W<:Distributions.Di
         lambda_weights::L=1f0,
         lambda_scales::L=1f0,
         prior_weight::P_W = Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, Inf32),
-    ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, P_W}
+        prior_scale::P_S = Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, 1f0)
+    ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, P_W, P_S}
         b = Flux.create_bias(W, bias, size(W, 1))
-        new{M, typeof(b), F, L, P_W}(W, S, b, activation, lambda_weights, lambda_scales, prior_weight)
+        new{M, typeof(b), F, L, P_W, P_S}(W, S, b, activation, lambda_weights, lambda_scales, prior_weight, prior_scale)
     end
 end
 
-TanhDenseMix(
+SigmoidDense(
     (in, out)::Pair{<:Integer, <:Integer};
     bias=true,
     activation=identity,
@@ -691,46 +693,47 @@ TanhDenseMix(
     lambda_weights=1f0,
     lambda_scales=1f0,
     prior_weight=Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, Inf32),
-) = TanhDenseMix(init_weights(out, in), init_scales(out, in), bias, activation, lambda_weights, lambda_scales, prior_weight)
+    prior_scale=Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, 1f0)
+) = SigmoidDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda_weights, lambda_scales, prior_weight, prior_scale)
 
-Flux.@functor TanhDenseMix
+Flux.@functor SigmoidDense
 
-function (l::TanhDenseMix)(x::AbstractVecOrMat)
+function (l::SigmoidDense)(x::AbstractVecOrMat)
     Flux._size_check(l, x, 1 => size(l.weight, 2))
     xT = Flux._match_eltype(l, x)
 
     weight_pos = Flux.softplus.(l.weight)
-    scale_tanh = Flux.tanh_fast.(l.scale)
+    scale_tanh = Flux.sigmoid_fast.(l.scale)
 
     return l.activation(scale_tanh .* weight_pos * xT .+ l.bias)
 end
 
-function Base.show(io::IO, l::TanhDenseMix)
-    println(io, "TanhDenseMix(")
+function Base.show(io::IO, l::SigmoidDense)
+    println(io, "SigmoidDense(")
     println(io, "\t", size(l.weight, 2), " => ", size(l.weight, 1), ";")
     println(io, "\t", "activation = ", l.activation, ",")
     println(io, "\t", "bias = ", l.bias, ",")
     println(io, "\t", "lambda_weights = ", l.lambda_weights, ",")
     println(io, "\t", "lambda_scales = ", l.lambda_scales, ",")
     println(io, "\t", "prior_weight = ", l.prior_weight, ",")
+    println(io, "\t", "prior_scale = ", l.prior_scale, ",")
     print(io, ")")
 end
 
 # Add penalty for ScaleMixtureDense layer - Horseshoe hierachical structure here
-function Penalties.penalty(l::TanhDenseMix)
+function Penalties.penalty(l::SigmoidDense)
     # transform the scale parameters first
     weight_pos = Flux.softplus.(l.weight)
-    scale_tanh = Flux.tanh_fast.(l.scale)
-    prior_scale = Distributions.truncated.(Distributions.Normal.(0f0, weight_pos), -1f0, 1f0)
+    scale_t = Flux.sigmoid_fast.(l.scale)
 
     -(
-        l.lambda_scales * sum(Distributions.logpdf.(prior_scale, scale_tanh)) +
+        l.lambda_scales * sum(Distributions.logpdf.(l.prior_scale, scale_t)) +
         l.lambda_weights * sum(Distributions.logpdf.(l.prior_weight, weight_pos))
     )
 end
 
 # Extend weights tracking function
-function WeightTracking.weight_container_init(layer::TanhDenseMix; n_iter::Int64)
+function WeightTracking.weight_container_init(layer::SigmoidDense; n_iter::Int64)
     w_dict = Dict()
     for (pos, param) in enumerate(Flux.params(layer))
         param_size = size(param)
@@ -740,13 +743,13 @@ function WeightTracking.weight_container_init(layer::TanhDenseMix; n_iter::Int64
     return w_dict
 end
 
-function WeightTracking.weight_tracking_push!(epoch::Int64, layer::TanhDenseMix, dict_weights_layer::Dict, dict_dims_layer::Dict)
+function WeightTracking.weight_tracking_push!(epoch::Int64, layer::SigmoidDense, dict_weights_layer::Dict, dict_dims_layer::Dict)
     for (pos, param) in enumerate(Flux.params(layer))
         dict_weights_layer[string(pos)][dict_dims_layer[string(pos)]..., epoch] = param
     end
 end
 
-function WeightTracking.container_dim_init(layer::TanhDenseMix)
+function WeightTracking.container_dim_init(layer::SigmoidDense)
     dim_dict = Dict()
     for (pos, param) in enumerate(Flux.params(layer))
         param_size = size(param)
