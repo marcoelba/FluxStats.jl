@@ -531,20 +531,25 @@ end
 
 
 """
-    TanhDense(
+    ScaleDense(
         (in, out)::Pair{<:Integer, <:Integer};
         bias=true,
         activation=identity,
-        init=Flux.glorot_normal,
-        lambda=0f0,
-        prior_scale=Distributions.TruncatedNormal(0f0, 10f0, 0f0, Inf32)
+        init_weights=Utilities.init_weights,
+        init_scales=Utilities.init_scales,
+        lambda_weights=1f0,
+        lambda_scales=1f0,
+        bijector_weight=Flux.softplus,
+        bijector_scale=Flux.tanh_fast,
+        prior_weight=Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, Inf32),
+        prior_scale=Distributions.truncated(Distributions.Normal(0f0, 1f0), -1f0, 1f0)
     )
 
     Custom Flux Scale-Mixture Dense layer
     Works like a standard Dense layer, but creates a set of additional scale coefficients (one for each weight),
         which are used in the weights loss function.
 """
-struct ScaleDense{M <: AbstractMatrix, B, F, L<:Float32, B_W, B_S, P_W<:Distributions.Distribution, P_S<:Distributions.Distribution}
+struct ScaleDense{M <: AbstractMatrix, B, F, L<:Float32, B_W, B_S, P_W, P_S, DB<:Bool}
     weight::M
     scale::M
     bias::B
@@ -555,6 +560,7 @@ struct ScaleDense{M <: AbstractMatrix, B, F, L<:Float32, B_W, B_S, P_W<:Distribu
     bijector_scale::B_S
     prior_weight::P_W
     prior_scale::P_S
+    distribution_penalty::DB
 
     function ScaleDense(
         W::M,
@@ -566,11 +572,12 @@ struct ScaleDense{M <: AbstractMatrix, B, F, L<:Float32, B_W, B_S, P_W<:Distribu
         bijector_weight::B_W = Flux.softplus,
         bijector_scale::B_S = Flux.tanh_fast,
         prior_weight::P_W = Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, Inf32),
-        prior_scale::P_S = Distributions.truncated(Distributions.Normal(0f0, 1f0), -1f0, 1f0)
-    ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, B_W, B_S, P_W, P_S}
+        prior_scale::P_S = Distributions.truncated(Distributions.Normal(0f0, 1f0), -1f0, 1f0),
+        distribution_penalty::DB = true
+    ) where {M <: AbstractMatrix, B<:Union{Bool, AbstractArray}, F, L, B_W, B_S, P_W, P_S, DB}
         b = Flux.create_bias(W, bias, size(W, 1))
-        new{M, typeof(b), F, L, B_W, B_S, P_W, P_S}(
-            W, S, b, activation, lambda_weights, lambda_scales, bijector_weight, bijector_scale, prior_weight, prior_scale
+        new{M, typeof(b), F, L, B_W, B_S, P_W, P_S, DB}(
+            W, S, b, activation, lambda_weights, lambda_scales, bijector_weight, bijector_scale, prior_weight, prior_scale, distribution_penalty
             )
     end
 end
@@ -586,8 +593,9 @@ ScaleDense(
     bijector_weight=Flux.softplus,
     bijector_scale=Flux.tanh_fast,
     prior_weight=Distributions.truncated(Distributions.Normal(0f0, 1f0), 0f0, Inf32),
-    prior_scale=Distributions.truncated(Distributions.Normal(0f0, 1f0), -1f0, 1f0)
-) = ScaleDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda_weights, lambda_scales, bijector_weight, bijector_scale, prior_weight, prior_scale)
+    prior_scale=Distributions.truncated(Distributions.Normal(0f0, 1f0), -1f0, 1f0),
+    distribution_penalty=true
+) = ScaleDense(init_weights(out, in), init_scales(out, in), bias, activation, lambda_weights, lambda_scales, bijector_weight, bijector_scale, prior_weight, prior_scale, distribution_penalty)
 
 Flux.@functor ScaleDense
 
@@ -621,10 +629,17 @@ function Penalties.penalty(l::ScaleDense)
     weight_t = l.bijector_weight.(l.weight)
     scale_t = l.bijector_scale.(l.scale)
 
-    -(
-        l.lambda_scales * sum(Distributions.logpdf.(l.prior_scale, scale_t)) +
-        l.lambda_weights * sum(Distributions.logpdf.(l.prior_weight, weight_t))
-    )
+    if l.distribution_penalty
+        return -(
+            l.lambda_scales * sum(Distributions.logpdf.(l.prior_scale, scale_t)) +
+            l.lambda_weights * sum(Distributions.logpdf.(l.prior_weight, weight_t))
+        )
+    else
+        return (
+            l.lambda_scales * l.prior_scale(scale_t) +
+            l.lambda_weights * l.prior_weight(weight_t)
+        )
+    end
 end
 
 # Extend weights tracking function
