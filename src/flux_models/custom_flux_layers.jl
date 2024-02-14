@@ -635,9 +635,9 @@ function Penalties.penalty(l::ScaleDense)
             l.lambda_weights * sum(Distributions.logpdf.(l.prior_weight, weight_t))
         )
     else
-        return (
-            l.lambda_scales * l.prior_scale(scale_t) +
-            l.lambda_weights * l.prior_weight(weight_t)
+        return -(
+            l.lambda_scales * sum(l.prior_scale(scale_t)) +
+            l.lambda_weights * sum(l.prior_weight(weight_t))
         )
     end
 end
