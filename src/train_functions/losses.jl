@@ -70,4 +70,31 @@ function huber(x, scale=1f0; delta::Float32=1.f0)
 end
 
 
+"""
+    logpdf_truncated_normal(x::Array{Float32}, mu::Float32=0f0, sd::Float32=1f0, t::Float32=0.5f0)
+"""
+function logpdf_truncated_normal(x::Array{Float32}, mu::Float32=0f0, sd::Float32=1f0, t::Float32=0.5f0)
+    -0.5f0 .* log(2f0*pi) - log(sd) .- 0.5f0 .* ((x .- mu) ./ sd).^2f0 .- log.(t)
+end
+
+
+"""
+    logpdf_truncated_mixture_normal(x::Array{Float32}, mu::Float32=0f0, sd::Float32=1f0, t::Float32=0.5f0)
+"""
+function logpdf_truncated_mixture_normal(
+    x::Matrix{Float32};
+    w::Vector{Float32}=Float32.([0.5, 0.25, 0.25]),
+    mu::Vector{Float32}=Float32.([0, -1, 1]),
+    sd::Vector{Float32}=Float32.([0.1, 0.5, 0.5]),
+    t::Vector{Float32}=Float32.([1, 0.5, 0.5])
+    )
+    xstd = -0.5f0 .* ((x .- mu) ./ sd).^2f0
+    wstd = w ./ (sqrt(2f0 .* pi) .* sd) ./ t
+    offset = maximum(xstd .* wstd, dims=1)
+    xe = exp.(xstd .- offset)
+    s = sum(xe .* wstd, dims=1)
+    log.(s) .+ offset
+end
+
+
 end
