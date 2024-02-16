@@ -39,12 +39,12 @@ function model_train(
     )
     # ---------- Input cheks -------------
     # Check dimensions of model output and loss input
-    try
-        out_model = model(X_train)
-        loss_function(y_train, out_model...)
-    catch err
-        throw("Model output and loss input sizes do not match")
-    end
+    # try
+    #     out_model = model(X_train)
+    #     loss_function(y_train, out_model...)
+    # catch err
+    #     throw("Model output and loss input sizes do not match")
+    # end
     # Check number of iterations
     if n_iter <= 1
         throw("Number of iterations must be > 1")
