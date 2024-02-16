@@ -60,6 +60,22 @@ function gaussian_negloglik(
 end
 
 
+
+"""
+        bernoulli_logit_negloglik(x::Array{Float32}, mu::Array{Float32}, sigma::Array{Float32}=Flux.ones32(size(mu)...))
+
+    Compute the Bernoulli Logit negative loglikelihood over all provided input.
+    Takes as input the predicted logit of the probability.
+"""
+function bernoulli_logit_negloglik(
+    x::Array{Float32},
+    logitp::Array{Float32}
+    )
+    distribution = Distributions.BernoulliLogit{Float32}.(logitp)
+    -Distributions.logpdf.(distribution, x)
+end
+
+
 """
     Huber loss function
 """
